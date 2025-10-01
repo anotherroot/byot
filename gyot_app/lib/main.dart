@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:test_apk/search_page.dart';
-// import 'package:test_apk/sources_page.dart';
-
-// import 'profile_page.dart';
-// import 'settings_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,154 +12,83 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isSideMenuExtended = false;
+
+  late bool _isMobile;
+  bool _appStateDetected = false;
+
 
   @override
   Widget build(BuildContext context) {
+    if (!_appStateDetected) {
+      final mediaQuery = MediaQuery.of(context);
+      final screenWidth = mediaQuery.size.width;
+      _isMobile = screenWidth < 600;
+      _appStateDetected = true;
+    }
+
     return MaterialApp(
       title: 'Flutter Navigation Demo',
-      initialRoute: '/add-source',
-      routes: {
-        '/': (context) => getLayoutPage(context,
-            const ContentPage(title: "home", icon: Icons.add_circle_outline)),
-        '/sources': (context) => getLayoutPage(
-            context,
-            const ContentPage(
-                title: "sources", icon: Icons.add_circle_outline)),
-        '/search': (context) => getLayoutPage(context,
-            const ContentPage(title: "search", icon: Icons.add_circle_outline)),
-        '/add-source': (context) => getLayoutPage(
-            context,
-            const ContentPage(
-                title: "Add srouce", icon: Icons.add_circle_outline)),
-        '/settings': (context) => getLayoutPage(
-            context,
-            const ContentPage(
-                title: "settings", icon: Icons.add_circle_outline)),
-        '/menu': (context) => getLayoutPage(
-            context,
-            const ContentPage(
-                title: "profile", icon: Icons.add_circle_outline)),
-      },
+      home: _isMobile ? const MobileLayout() : const DesktopLayout(),
     );
   }
 
-  int _getSelectedIndexMobile(BuildContext context) {
-    final route = ModalRoute.of(context);
-    if (route == null || route.settings.name == null) {
-      return 10;
-    }
-    switch (route.settings.name) {
-      case "/":
-        return 10;
-      case "/sources":
-        return 0;
-      case "/search":
-        return 1;
-      case "/add-source":
-        return 2;
-      case "/settings":
-        return 3;
-      case "/menu":
-        return 4;
-      default:
-        return 10;
-    }
-    // return 0;
+}
+
+enum PageType { home, search, sources, addSource, settings, menu }
+
+class MobileLayout extends StatefulWidget {
+  const MobileLayout({super.key});
+
+  @override
+  State<MobileLayout> createState() => _MobileLayoutState();
+}
+
+class _MobileLayoutState extends State<MobileLayout> {
+  late Map<PageType, Widget> pages = {
+    PageType.home: const ContentPage(title: "Home", icon: Icons.home_outlined),
+    PageType.search:
+        const ContentPage(title: "Search", icon: Icons.search_outlined),
+    PageType.sources:
+        const ContentPage(title: "Sources", icon: Icons.source_outlined),
+    PageType.addSource:
+        const ContentPage(title: "Add source", icon: Icons.add_circle_outline),
+    PageType.settings:
+        const ContentPage(title: "Settings", icon: Icons.settings_outlined),
+    PageType.menu: const ContentPage(title: "Menu", icon: Icons.menu_outlined),
+  };
+
+  late PageType _currentPageType;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPageType = PageType.home;
   }
 
-  int _getSelectedIndexDesktop(BuildContext context) {
-    final route = ModalRoute.of(context);
-    if (route == null || route.settings.name == null) {
-      return 4;
-    }
-    switch (route.settings.name) {
-      case "/add-source":
-        return 0;
-      case "/sources":
-        return 1;
-      case "/search":
-        return 2;
-      case "/settings":
-        return 3;
-      case "/":
-        return 4;
-      case "/menu":
-        return 4;
-      default:
-        return 4;
-    }
-    // return 0;
+  void setCurrentPage(PageType type) {
+    setState(() {
+      _currentPageType = type;
+    });
   }
 
-  void _onItemTappedMobile(BuildContext context, int index) {
-    switch (index) {
-      case 10:
-        Navigator.pushNamed(context, '/');
-        break;
-      case 0:
-        Navigator.pushNamed(context, '/sources');
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/search');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/add-source');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/settings');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/menu');
-        break;
-      default:
-        Navigator.pushNamed(context, '/');
-        break;
-    }
-  }
-
-  void _onItemTappedDesktop(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushNamed(context, '/add-source');
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/sources');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/search');
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/settings');
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/');
-        break;
-      default:
-        Navigator.pushNamed(context, '/');
-        break;
-    }
-  }
-
-  Widget getLayoutPage(BuildContext context, Widget page) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 600) {
-          return buildMobileLayout(context, page);
-        } else {
-          return buildDesktopLayout(context, page);
-        }
-      },
+  Widget getIconButton(IconData icon, String tooltip, PageType pageType) {
+    return IconButton(
+      icon: Icon(icon),
+      color: _currentPageType == pageType
+          ? Theme.of(context).primaryColor
+          : Colors.grey,
+      onPressed: () => setCurrentPage(pageType),
+      tooltip: tooltip,
     );
   }
 
-  Widget buildMobileLayout(BuildContext context, Widget page) {
-    final selectedIndex = _getSelectedIndexMobile(context);
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      body: page,
+      body: pages[_currentPageType],
       floatingActionButton: FloatingActionButton(
         shape: const CircleBorder(),
-        onPressed: () => _onItemTappedMobile(context, 2),
+        onPressed: () => _currentPageType = PageType.addSource,
         tooltip: 'Add Source',
         elevation: 2.0,
         child: const Icon(Icons.add),
@@ -176,61 +100,79 @@ class _MyAppState extends State<MyApp> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: <Widget>[
-            IconButton(
-              icon: const Icon(Icons.search),
-              color: selectedIndex == 0
-                  ? Theme.of(context).primaryColor
-                  : Colors.grey,
-              onPressed: () => _onItemTappedMobile(context, 0),
-              tooltip: 'Search',
-            ),
-            IconButton(
-              icon: const Icon(Icons.source),
-              color: selectedIndex == 1
-                  ? Theme.of(context).primaryColor
-                  : Colors.grey,
-              onPressed: () => _onItemTappedMobile(context, 1),
-              tooltip: 'Sources',
-            ),
-            // This is the empty space for the notch
+            getIconButton(Icons.search, 'Search', PageType.search),
+            getIconButton(Icons.source, 'Sources', PageType.sources),
             const SizedBox(width: 48),
-            IconButton(
-              icon: const Icon(Icons.settings),
-              color: selectedIndex == 3
-                  ? Theme.of(context).primaryColor
-                  : Colors.grey,
-              onPressed: () => _onItemTappedMobile(context, 3),
-              tooltip: 'Settings',
-            ),
-            IconButton(
-              icon: const Icon(Icons.person),
-              color: selectedIndex == 4
-                  ? Theme.of(context).primaryColor
-                  : Colors.grey,
-              onPressed: () => _onItemTappedMobile(context, 4),
-              tooltip: 'Profile',
-            ),
+            getIconButton(Icons.settings, 'Settings', PageType.settings),
+            getIconButton(Icons.menu, 'Menu', PageType.menu),
           ],
         ),
       ),
     );
   }
+}
 
-  // Builds the UI for desktop devices with an expandable NavigationRail
-  Widget buildDesktopLayout(BuildContext context, Widget page) {
+class DesktopLayout extends StatefulWidget {
+  const DesktopLayout({super.key});
+
+  @override
+  State<DesktopLayout> createState() => _DesktopLayoutState();
+}
+
+class _DesktopLayoutState extends State<DesktopLayout> {
+  final Map<PageType, Widget> pages = {
+    PageType.search:
+        const ContentPage(title: "Search", icon: Icons.search_outlined),
+    PageType.sources:
+        const ContentPage(title: "Sources", icon: Icons.source_outlined),
+    PageType.addSource:
+        const ContentPage(title: "Add source", icon: Icons.add_circle_outline),
+    PageType.settings:
+        const ContentPage(title: "Settings", icon: Icons.settings_outlined),
+    PageType.menu: const ContentPage(title: "Menu", icon: Icons.menu_outlined),
+  };
+  final Map<int, PageType> indexToPageType = {
+    0: PageType.addSource,
+    1: PageType.search,
+    2: PageType.sources,
+    3: PageType.settings,
+  };
+
+  late PageType _currentPageType;
+  late int _currentPageIndex;
+  bool _isSideMenuExtended = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPageIndex = 0;
+    _currentPageType = indexToPageType[_currentPageIndex] ?? PageType.addSource;
+  }
+
+  void _setCurrentPage(int i) {
+    setState(() {
+      _currentPageIndex = i;
+      final type = indexToPageType[i];
+      if (type != null) {
+        _currentPageType = type;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
         children: <Widget>[
           NavigationRail(
-            selectedIndex: _getSelectedIndexDesktop(context),
-            onDestinationSelected: (i) => _onItemTappedDesktop(context, i),
-            // Controls whether the labels are shown
+            selectedIndex: _currentPageIndex,
+            onDestinationSelected: _setCurrentPage,
             extended: _isSideMenuExtended,
-            // The header of the navigation rail, contains the menu button
             leading: Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
                 child: IconButton(
                   icon: Icon(
                     _isSideMenuExtended ? Icons.menu_open : Icons.menu,
@@ -250,14 +192,14 @@ class _MyAppState extends State<MyApp> {
                 label: Text('Add Source'),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.search_outlined),
-                selectedIcon: Icon(Icons.search),
-                label: Text('Search'),
-              ),
-              NavigationRailDestination(
                 icon: Icon(Icons.source_outlined),
                 selectedIcon: Icon(Icons.source),
                 label: Text('Sources'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.search_outlined),
+                selectedIcon: Icon(Icons.search),
+                label: Text('Search'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.settings_outlined),
@@ -271,11 +213,9 @@ class _MyAppState extends State<MyApp> {
               ),
             ],
           ),
-          // A vertical line to separate the menu from the content
           const VerticalDivider(thickness: 1, width: 1),
-          // The main content area
           Expanded(
-            child: page,
+            child: pages[_currentPageType] ?? const Text("test"),
           ),
         ],
       ),
@@ -296,20 +236,22 @@ class ContentPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          size: 100,
-          color: theme.colorScheme.primary.withOpacity(0.6),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          title,
-          style: theme.textTheme.headlineMedium,
-        ),
-      ],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 100,
+            color: theme.colorScheme.primary.withOpacity(0.6),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            title,
+            style: theme.textTheme.headlineMedium,
+          ),
+        ],
+      ),
     );
   }
 }
